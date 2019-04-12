@@ -71,18 +71,25 @@ def next_or_prev_in_order(instance, qs=None, prev=False, loop=False):
         field = ordering[0]
         val = get_model_attr(instance, field)
         qss = qs
+        print("ORDERING", ordering)
+        print("INSTANCE", instance)
+        print("FV", field, val)
         if val is not None:
             qss = qs.filter(reduce(models.Q.__or__, q_list))
         else:
-            qss = qs.exclude(pk=instance.pk)
+            qss = qs.filter().exclude(pk=instance.pk)
+            if prev:
+                qss = qss.filter(author__isnull=True, pk__lt=instance.pk)
+            else:
+                qss = qss.filter(pk__gt=instance.pk)
+
 
         item = qss[0]
-        print(ordering)
         print(instance)
         print("VAL", val, field)
         print(item, instance)
         print(get_model_attr(item, field), get_model_attr(instance, field))
-        print(get_model_attr(item, field) == get_model_attr(instance, field))
+        print(get_model_attr(item, "pk") , get_model_attr(instance, "pk"))
         print("Yo")
         print(qss)
 
