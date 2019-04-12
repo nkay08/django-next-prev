@@ -62,11 +62,46 @@ def next_or_prev_in_order(instance, qs=None, prev=False, loop=False):
         q_kwargs = dict([(f, get_model_attr(instance, f))
                          for f in prev_fields])
         key = "%s__%s" % (field, this_lookup)
-        q_kwargs[key] = get_model_attr(instance, field)
+        val = get_model_attr(instance, field)
+        q_kwargs[key] = val
         q_list.append(models.Q(**q_kwargs))
         prev_fields.append(field)
+
     try:
-        return qs.filter(reduce(models.Q.__or__, q_list))[0]
+        field = ordering[0]
+        val = get_model_attr(instance, field)
+        qss = qs
+        if val is not None:
+            qss = qs.filter(reduce(models.Q.__or__, q_list))
+        else:
+            qss = qs.exclude(pk=instance.pk)
+
+        item = qss[0]
+        print(ordering)
+        print(instance)
+        print("VAL", val, field)
+        print(item, instance)
+        print(get_model_attr(item, field), get_model_attr(instance, field))
+        print(get_model_attr(item, field) == get_model_attr(instance, field))
+        print("Yo")
+        print(qss)
+
+        if get_model_attr(item, field) == get_model_attr(instance, field):
+            print("same", item, get_model_attr(item, field), instance, get_model_attr(instance, field))
+            print("QK", q_kwargs)
+            print("QL", q_list)
+            filterterm = {field: val}
+            print("FILTER", filterterm)
+            qss = qss.filter(models.Q(**filterterm))
+            print("new QS", qss)
+            if prev:
+                item = qss.filter(pk__lt=instance.pk).first()
+
+            else:
+                item = qss.filter(pk__gt=instance.pk).first()
+
+        return item
+
     except IndexError:
         length = qs.count()
         if loop and length > 1:
